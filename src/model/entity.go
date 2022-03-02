@@ -14,8 +14,8 @@ type Birthdate struct {
 }
 
 type Entity struct {
-	Id        int64     `json:"id" validate:"required,min=1"`
-	Name      string    `json:"name" validate:"required,min=4"`
+	Id        int64     `json:"id"`
+	Name      string    `json:"name" validate:"required,min=4,max=100"`
 	Birthdate Birthdate `json:"birthDate" validate:"required"`
 	Weight    float32   `json:"weight" validate:"min=1.5,max=599.99"`
 }

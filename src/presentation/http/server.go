@@ -1,6 +1,7 @@
 package http
 
 import (
+	"entity/src/infra/logger"
 	"errors"
 	"fmt"
 	netHttp "net/http"
@@ -19,14 +20,14 @@ func StartHttpServer() <-chan error {
 		r.Mount("/entity", getEntityRoutes())
 	})
 
-	fmt.Println("avaliable routes:")
+	logger.Info("avaliable routes:")
 	walkThroughRoutes := func(method string, route string, handler netHttp.Handler, middleware ...func(netHttp.Handler) netHttp.Handler) error {
-		fmt.Println(fmt.Sprintf("- %s %s", method, route))
+		logger.Info(fmt.Sprintf("> %s %s", method, route))
 		return nil
 	}
 
 	if err := chi.Walk(router, walkThroughRoutes); err != nil {
-		fmt.Println("error on walkThroughRoutes", err)
+		logger.Error("error on walkThroughRoutes", err)
 		ch <- errors.New("error on try to start http server")
 	} else {
 		port := 80
@@ -35,7 +36,7 @@ func StartHttpServer() <-chan error {
 			port, _ = strconv.Atoi(envPort)
 		}
 
-		fmt.Println(fmt.Sprintf("http server connected on port: %d", port))
+		logger.Info(fmt.Sprintf("http server connected on port: %d", port))
 
 		ch <- netHttp.ListenAndServe(fmt.Sprintf(":%d", port), router)
 	}

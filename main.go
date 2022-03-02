@@ -1,10 +1,17 @@
 package main
 
 import (
+	"entity/src/start"
 	"fmt"
+	"log"
 )
 
-// TODO start app
 func main() {
 	fmt.Println("startintg application")
+
+	errs := start.StartApplication()
+	for {
+		err := <-errs
+		log.Fatal("error - exiting application", err)
+	}
 }

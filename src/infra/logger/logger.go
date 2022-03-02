@@ -15,10 +15,16 @@ type singValues struct {
 	once    sync.Once
 }
 
-func getSingValues() (vals singValues) {
+var vals singValues
+
+func getSingValues() singValues {
 	vals.once.Do(func() {
 		vals.isDebug = strings.ToLower(os.Getenv("GO_ENV")) != "prod"
 		vals.isLogOn, _ = strconv.ParseBool(os.Getenv("LOG_ON"))
+
+		if !vals.isLogOn {
+			fmt.Println("(env LOG_ON=false) logs disabled")
+		}
 	})
 
 	return vals
@@ -31,7 +37,7 @@ func getFormattedMessage(msg string) string {
 func Info(msg string, args ...interface{}) {
 	if getSingValues().isLogOn {
 		fmtMsg := getFormattedMessage(msg)
-		if getSingValues().isDebug {
+		if getSingValues().isDebug && len(args) > 0 {
 			fmt.Println(fmtMsg, args)
 		} else {
 			fmt.Println(fmtMsg)

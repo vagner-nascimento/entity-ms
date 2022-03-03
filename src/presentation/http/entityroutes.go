@@ -1,6 +1,7 @@
 package http
 
 import (
+	"entity/src/apperrors"
 	"entity/src/infra/logger"
 	"entity/src/model"
 	"io"
@@ -20,21 +21,28 @@ func getEntityRoutes() *chi.Mux {
 func postEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 	if ent, err := getValidatedEntity(r.Body); len(err.Errors) == 0 {
 		//TODO proccess data
-		logger.Info("http.postEntity success", ent)
+		logger.Info("http.postEntity success", ent.String())
 	} else {
+		logger.Error("http.postEntity error", &err)
 		writeBadRequestResponse(w, err)
 	}
 }
 
-func getValidatedEntity(reader io.ReadCloser) (ent model.Entity, resErr httpErrors) {
-	var err error
-	if ent, err = getEntityFromBody(reader); err == nil {
-		resErr = newValidationErrors(ent.Validate())
+func getValidatedEntity(reader io.ReadCloser) (*model.Entity, httpErrors) {
+	var res *model.Entity
+	var resErr httpErrors
+
+	if ent, err := getEntityFromBody(reader); err == nil {
+		if isValid, errs := ent.Validate(); isValid {
+			res = &ent
+		} else {
+			resErr.Errors = errs
+		}
 	} else {
-		resErr.Errors = append(resErr.Errors, newConversionError(err))
+		resErr.Errors = append(resErr.Errors, apperrors.NewConversionValidationError(err.Error()))
 	}
 
-	return ent, resErr
+	return res, resErr
 }
 
 func getEntityFromBody(reader io.ReadCloser) (ent model.Entity, err error) {

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"entity/src/app"
 	"entity/src/apperrors"
 	"entity/src/infra/logger"
 	"entity/src/model"
@@ -20,8 +21,13 @@ func getEntityRoutes() *chi.Mux {
 
 func postEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 	if ent, err := getValidatedEntity(r.Body); len(err.Errors) == 0 {
-		//TODO proccess data
-		logger.Info("http.postEntity success", ent.String())
+		if err := app.NewEnityAdapter().Save(ent); err == nil {
+			logger.Info("http.postEntity success", ent.String())
+			writeCreatedResponse(w, ent)
+		} else {
+			logger.Error("http.postEntity error", err)
+			writeErrorResponse(w, *err)
+		}
 	} else {
 		logger.Error("http.postEntity error", &err)
 		writeBadRequestResponse(w, err)
@@ -39,7 +45,7 @@ func getValidatedEntity(reader io.ReadCloser) (*model.Entity, httpErrors) {
 			resErr.Errors = errs
 		}
 	} else {
-		resErr.Errors = append(resErr.Errors, apperrors.NewConversionValidationError(err.Error()))
+		resErr.Errors = append(resErr.Errors, apperrors.NewValidationError(err.Error(), nil, nil))
 	}
 
 	return res, resErr

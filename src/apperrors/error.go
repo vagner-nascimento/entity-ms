@@ -19,7 +19,17 @@ func (e *Error) Error() string {
 	return *e.Message
 }
 
-const typValidation string = "validation"
+const ERR_TP_VALIDATION string = "validation"
+
+func NewValidationError(msg string, field *string, val interface{}) Error {
+	tp := ERR_TP_VALIDATION
+	return Error{
+		Message: &msg,
+		Type:    &tp,
+		Field:   field,
+		Value:   val,
+	}
+}
 
 // NOTE: only required, min and max validation tags are implemented
 func NewValidationErrors(vErs validator.ValidationErrors) (errs []Error) {
@@ -43,7 +53,7 @@ func NewValidationErrors(vErs validator.ValidationErrors) (errs []Error) {
 			msg = fmt.Sprint(e)
 		}
 
-		tp := typValidation
+		tp := ERR_TP_VALIDATION
 		indx := strings.Index(e.Namespace(), ".") + 1
 		fld := e.Namespace()[indx:]
 
@@ -56,12 +66,4 @@ func NewValidationErrors(vErs validator.ValidationErrors) (errs []Error) {
 	}
 
 	return errs
-}
-
-func NewConversionValidationError(msg string) Error {
-	tp := typValidation
-	return Error{
-		Message: &msg,
-		Type:    &tp,
-	}
 }

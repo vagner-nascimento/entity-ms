@@ -15,6 +15,7 @@ func getEntityRoutes() *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Post("/", postEntity)
+	router.Get("/{id}", getEntity)
 
 	return router
 }
@@ -22,15 +23,26 @@ func getEntityRoutes() *chi.Mux {
 func postEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 	if ent, err := getValidatedEntity(r.Body); len(err.Errors) == 0 {
 		if err := app.NewEnityAdapter().Save(ent); err == nil {
-			logger.Info("http.postEntity success", ent.String())
 			writeCreatedResponse(w, ent)
 		} else {
-			logger.Error("http.postEntity error", err)
 			writeErrorResponse(w, *err)
 		}
 	} else {
-		logger.Error("http.postEntity error", &err)
 		writeBadRequestResponse(w, err)
+	}
+}
+
+func getEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
+	if id := getPathParam(r.URL.Path, 1); id != "" {
+		if ent, err := app.NewEnityAdapter().Get(id); err == nil {
+			logger.Info("ent", ent)
+			writeSuccessResponse(w, ent)
+		} else {
+			writeErrorResponse(w, *err)
+		}
+	} else {
+		fild := "path '/{id}'"
+		writeErrorResponse(w, apperrors.NewValidationError("id must be informed", &fild, nil))
 	}
 }
 

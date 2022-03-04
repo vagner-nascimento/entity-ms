@@ -15,6 +15,10 @@ func (e *entEntity) save(ent *model.Entity) *apperrors.Error {
 	return e.repo.Save(ent)
 }
 
+func (e *entEntity) get(id interface{}) (*model.Entity, *apperrors.Error) {
+	return e.repo.Get(id)
+}
+
 func newEntEntity() entEntity {
 	return entEntity{
 		repo: infra.NewEntityRepository(),

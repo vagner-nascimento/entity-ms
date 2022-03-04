@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"entity/src/apperrors"
 	"entity/src/infra/logger"
 	"log"
@@ -10,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -21,16 +24,16 @@ type mongoConn struct {
 	once   sync.Once
 	db     *mongo.Database
 	params struct {
-		dbName        string
-		conStr        string
-		conTimeOut    time.Duration
-		upsertTimeOut time.Duration
+		dbName           string
+		conStr           string
+		conTimeOut       time.Duration
+		upsertGetTimeOut time.Duration
 	}
 }
 
 func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err *apperrors.Error) {
 	if cerr := initConn(); cerr == nil {
-		if res, dberr := mc.db.Collection(table).InsertOne(getContext(mc.params.upsertTimeOut), data); dberr == nil {
+		if res, dberr := mc.db.Collection(table).InsertOne(getContext(mc.params.upsertGetTimeOut), data); dberr == nil {
 			id = res.InsertedID
 		} else {
 			logger.Error("mongodb insert one error", dberr)
@@ -38,16 +41,50 @@ func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err
 			err = &aperr
 		}
 	} else {
-		logger.Error("mongodb connection error", cerr)
-		aperr := apperrors.NewInfraError("error trying to connect on database", nil)
-		err = &aperr
+		err = getConnError(cerr)
 	}
 
 	return id, err
 }
 
+// TODO handle not found
+func (mc *mongoConn) Get(id interface{}, table string) (data []byte, err *apperrors.Error) {
+	if cerr := initConn(); cerr == nil {
+		ctx := getContext(mc.params.upsertGetTimeOut)
+
+		bys, _ := json.Marshal(id)
+		bid, _ := primitive.ObjectIDFromHex(string(bys))
+
+		// TODO NOT FOUND WITH CORRECT ID: realise how to convert interface id into FCK bson object id
+		logger.Info("bys", string(bys))
+		logger.Info("bid", bid)
+
+		if raw, ferr := mc.db.Collection(table).FindOne(ctx, bson.M{"_id": string(bys)}).DecodeBytes(); ferr == nil {
+			data, _ = json.Marshal(raw)
+			logger.Info("bys", data)
+		} else {
+			logger.Error("ferr", ferr)
+			aperr := apperrors.NewDataError("error on get data", ferr)
+			err = &aperr
+		}
+	} else {
+		err = getConnError(cerr)
+	}
+
+	return data, err
+}
+
 func NewDatabaseConnection() DataBaseHandler {
 	return &singCon
+}
+
+/*
+ * Type Auxiliar Funcs
+ */
+func getConnError(err error) *apperrors.Error {
+	logger.Error("mongodb connection error", err)
+	res := apperrors.NewInfraError("error trying to connect on database", nil)
+	return &res
 }
 
 /*
@@ -79,10 +116,10 @@ func initConn() error {
 		}()
 
 		singCon.params = struct {
-			dbName        string
-			conStr        string
-			conTimeOut    time.Duration
-			upsertTimeOut time.Duration
+			dbName           string
+			conStr           string
+			conTimeOut       time.Duration
+			upsertGetTimeOut time.Duration
 		}{db, conSt, time.Duration(tmOut), 2}
 
 	})

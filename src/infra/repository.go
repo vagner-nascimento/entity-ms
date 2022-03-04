@@ -10,6 +10,7 @@ import (
 // data adaption and control flow layer
 type entRepository struct {
 	db database.DataBaseHandler
+	tb string
 }
 
 func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
@@ -26,8 +27,26 @@ func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
 	return err
 }
 
+func (er *entRepository) Get(id interface{}) (res *model.Entity, err *apperrors.Error) {
+	var data []byte
+	if data, err = er.db.Get(id, "entity"); err == nil {
+		parseEntity(res, data)
+	}
+
+	return res, err
+}
+
 func NewEntityRepository() EntityDataAdapter {
 	return &entRepository{
 		db: database.NewDatabaseConnection(),
+		tb: "entity",
 	}
+}
+
+/*
+ * Auxiliar Functions
+ */
+func parseEntity(ent *model.Entity, data []byte) {
+	nent, _ := model.NewEntityFromBytes(data)
+	ent = &nent
 }

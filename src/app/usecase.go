@@ -21,6 +21,10 @@ func (eu *entUseCase) save(ent *model.Entity) *apperrors.Error {
 	return eu.ent.save(ent)
 }
 
+func (eu *entUseCase) get(id interface{}) (*model.Entity, *apperrors.Error) {
+	return eu.ent.get(id)
+}
+
 func newEntityUseCase() entUseCase {
 	return entUseCase{
 		ent: newEntEntity(),

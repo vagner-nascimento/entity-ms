@@ -1,0 +1,6 @@
+export LISTEN_PORT=3000
+export GO_ENV=dev
+export LOG_ON=1
+export MONGO_DB=app
+export MONGO_CONN_STR=mongodb://root:rpwd@localhost:27017/
+export MONGO_TIMEOUT=5

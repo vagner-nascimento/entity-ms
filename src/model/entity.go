@@ -4,22 +4,26 @@ import (
 	"encoding/json"
 	"entity/src/apperrors"
 	"entity/src/infra/logger"
+	"time"
 
 	"github.com/go-playground/validator"
 )
 
 // TODO custom validation to avoid inform a future date
 type BirthDate struct {
-	Day   int16 `json:"day" validate:"required,min=1,max=31"`
-	Month int16 `json:"month" validate:"required,min=1,max=12"`
-	Year  int32 `json:"year" validate:"required,min=1900"`
+	Day   int16 `json:"day" validate:"required,min=1,max=31" bson:"day"`
+	Month int16 `json:"month" validate:"required,min=1,max=12" bson:"month"`
+	Year  int32 `json:"year" validate:"required,min=1900" bson:"year"`
 }
 
 type Entity struct {
-	Id        *int64    `json:"id"`
-	Name      string    `json:"name" validate:"required,min=4,max=100"`
-	BirthDate BirthDate `json:"birthDate" validate:"required"`
-	Weight    float32   `json:"weight" validate:"min=1.5,max=599.99"`
+	Id        interface{} `json:"id" bson:"-"`
+	Name      string      `json:"name" validate:"required,min=4,max=100" bson:"name"`
+	BirthDate BirthDate   `json:"birthDate" validate:"required" bson:"birthDate"`
+	Weight    *float32    `json:"weight" validate:"min=1.5,max=599.99" bson:"weight"`
+	CreatedAt *time.Time  `json:"createdAt" bson:"createdAt"`
+	UpdatedAt *time.Time  `json:"updatedAt" bson:"updatedAt"`
+	DeletedAt *time.Time  `json:"deletedAt" bson:"deletedAt"`
 }
 
 func (e *Entity) Validate() (valid bool, errs []apperrors.Error) {

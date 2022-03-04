@@ -2,21 +2,32 @@ package infra
 
 import (
 	"entity/src/apperrors"
+	"entity/src/infra/database"
 	"entity/src/model"
+	"time"
 )
 
+// data adaption and control flow layer
 type entRepository struct {
+	db database.DataBaseHandler
 }
 
-// TODO implements some SQL database
-func (er *entRepository) Save(ent *model.Entity) *apperrors.Error {
-	var id int64
-	id = 69
-	ent.Id = &id
+func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
+	cdate := time.Now()
+	ent.CreatedAt = &cdate
+	ent.UpdatedAt = nil
+	ent.DeletedAt = nil
 
-	return nil
+	var id interface{}
+	if id, err = er.db.Insert(ent, "entity"); err == nil {
+		ent.Id = id
+	}
+
+	return err
 }
 
 func NewEntityRepository() EntityDataAdapter {
-	return &entRepository{}
+	return &entRepository{
+		db: database.NewDatabaseConnection(),
+	}
 }

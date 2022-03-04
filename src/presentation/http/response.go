@@ -13,10 +13,10 @@ func writeCreatedResponse(w http.ResponseWriter, data interface{}) {
 	w.Write(jsonRes)
 }
 
-// If err.Type == ERR_TP_VALIDATION, then status is BadRequest, otherwise is InternalServerError
+// If err.Type == ERR_TP_VALIDATION or ERR_TP_DATA, then status is BadRequest, otherwise is InternalServerError
 func writeErrorResponse(w http.ResponseWriter, err apperrors.Error) {
 	sts := func() int {
-		if err.Type != nil && *err.Type == apperrors.ERR_TP_VALIDATION {
+		if err.Type != nil && (*err.Type == apperrors.ERR_TP_VALIDATION || *err.Type == apperrors.ERR_TP_DATA) {
 			return http.StatusBadRequest
 		} else {
 			return http.StatusInternalServerError

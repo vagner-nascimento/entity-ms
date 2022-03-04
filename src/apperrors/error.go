@@ -20,6 +20,8 @@ func (e *Error) Error() string {
 }
 
 const ERR_TP_VALIDATION string = "validation"
+const ERR_TP_DATA string = "data"
+const ERR_TP_INFRA string = "infrastructure"
 
 func NewValidationError(msg string, field *string, val interface{}) Error {
 	tp := ERR_TP_VALIDATION
@@ -27,6 +29,24 @@ func NewValidationError(msg string, field *string, val interface{}) Error {
 		Message: &msg,
 		Type:    &tp,
 		Field:   field,
+		Value:   val,
+	}
+}
+
+func NewDataError(msg string, val interface{}) Error {
+	tp := ERR_TP_DATA
+	return Error{
+		Message: &msg,
+		Type:    &tp,
+		Value:   val,
+	}
+}
+
+func NewInfraError(msg string, val interface{}) Error {
+	tp := ERR_TP_INFRA
+	return Error{
+		Message: &msg,
+		Type:    &tp,
 		Value:   val,
 	}
 }

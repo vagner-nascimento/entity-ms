@@ -24,6 +24,15 @@ const ERR_TP_DATA string = "data"
 const ERR_TP_INFRA string = "infrastructure"
 const ERR_TP_NOT_FOUND string = "not_found"
 
+func newError(msg *string, tp string, val interface{}, fil *string) Error {
+	return Error{
+		Message: msg,
+		Type:    &tp,
+		Value:   val,
+		Field:   fil,
+	}
+}
+
 func NewValidationError(msg string, field *string, val interface{}) Error {
 	return newError(&msg, ERR_TP_VALIDATION, val, field)
 }
@@ -38,15 +47,6 @@ func NewInfraError(msg string, val interface{}) Error {
 
 func NewNotFoundError(msg string, val interface{}) Error {
 	return newError(&msg, ERR_TP_NOT_FOUND, val, nil)
-}
-
-func newError(msg *string, tp string, val interface{}, fil *string) Error {
-	return Error{
-		Message: msg,
-		Type:    &tp,
-		Value:   val,
-		Field:   fil,
-	}
 }
 
 // NOTE: only required, min and max validation tags are implemented

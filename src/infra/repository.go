@@ -29,7 +29,8 @@ func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
 
 func (er *entRepository) Get(id interface{}) (*model.Entity, *apperrors.Error) {
 	var ent model.Entity
-	err := er.db.Get(id, "entity", &ent)
+	fils := map[string]interface{}{"deletedAt": nil}
+	err := er.db.Get(id, "entity", &ent, fils)
 	ent.Id = id
 
 	return &ent, err

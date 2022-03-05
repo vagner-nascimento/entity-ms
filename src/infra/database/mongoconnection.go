@@ -46,13 +46,15 @@ func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err
 }
 
 // Get a document from database and inject its content into result param, that SHOULD be an address reference (&result)
-func (mc *mongoConn) Get(id interface{}, table string, result interface{}) (err *apperrors.Error) {
+func (mc *mongoConn) Get(id interface{}, table string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error) {
 	if cerr := initConn(); cerr == nil {
-		ctx := getContext(mc.params.upsertGetTimeOut)
 		bid, _ := primitive.ObjectIDFromHex(id.(string))
+		filters = append(filters, map[string]interface{}{"_id": bid})
+		fils := getFilters(filters...)
+		ctx := getContext(mc.params.upsertGetTimeOut)
 		errmsg := [2]string{"mongodb findOne error", "error on get data"}
 
-		if raw, ferr := mc.db.Collection(table).FindOne(ctx, bson.M{"_id": bid}).DecodeBytes(); ferr == nil {
+		if raw, ferr := mc.db.Collection(table).FindOne(ctx, fils).DecodeBytes(); ferr == nil {
 			if rerr := setResult(raw, result); rerr != nil {
 				err = getDataError(errmsg, &rerr, nil)
 			}
@@ -77,6 +79,16 @@ func NewDatabaseConnection() DataBaseHandler {
 /*
  * Type Auxiliar Funcs
  */
+func getFilters(fils ...map[string]interface{}) (res primitive.D) {
+	for _, fil := range fils {
+		for k, v := range fil {
+			res = append(res, bson.E{Key: k, Value: v})
+		}
+	}
+
+	return res
+}
+
 func getConnError(err error) *apperrors.Error {
 	logger.Error("mongodb connection error", err)
 	res := apperrors.NewInfraError("error trying to connect on database", nil)

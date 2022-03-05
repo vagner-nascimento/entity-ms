@@ -11,6 +11,12 @@ import (
 	"github.com/go-chi/chi"
 )
 
+/*
+ * TODO list
+ * - PUT
+ * - DELETE
+ * - PATCH
+ */
 func getEntityRoutes() *chi.Mux {
 	router := chi.NewRouter()
 

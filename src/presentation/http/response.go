@@ -20,25 +20,29 @@ func writeSuccessResponse(w http.ResponseWriter, data interface{}) {
 	w.Write(jsonRes)
 }
 
-// If err.Type == ERR_TP_VALIDATION or ERR_TP_DATA, then status is BadRequest, otherwise is InternalServerError
-// TODO implement NOT FOUND
+// If err.Type == ERR_TP_VALIDATION or ERR_TP_DATA, the status is BadRequest with details
+// If err.Type == ERR_TP_NOT_FOUND, the status is NoContent without details
+// Else the status is InternalServerError with details
 func writeErrorResponse(w http.ResponseWriter, err apperrors.Error) {
-	sts := func() int {
-		if err.Type != nil && (*err.Type == apperrors.ERR_TP_VALIDATION || *err.Type == apperrors.ERR_TP_DATA) {
-			return http.StatusBadRequest
-		} else {
-			return http.StatusInternalServerError
+	sts, write := func() (int, bool) {
+		switch *err.Type {
+		case apperrors.ERR_TP_VALIDATION, apperrors.ERR_TP_DATA:
+			return http.StatusBadRequest, true
+		case apperrors.ERR_TP_NOT_FOUND:
+			return http.StatusNoContent, false
+		default:
+			return http.StatusInternalServerError, true
 		}
 	}()
 
-	errs := httpErrors{
-		Errors: []apperrors.Error{err},
-	}
-
-	jsonErr, _ := json.Marshal(errs)
-
 	w.WriteHeader(sts)
-	w.Write(jsonErr)
+
+	if write {
+		errs := httpErrors{Errors: []apperrors.Error{err}}
+		jsonErr, _ := json.Marshal(errs)
+
+		w.Write(jsonErr)
+	}
 }
 
 func writeBadRequestResponse(w http.ResponseWriter, httpErr httpErrors) {

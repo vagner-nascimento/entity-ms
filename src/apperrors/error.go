@@ -22,32 +22,30 @@ func (e *Error) Error() string {
 const ERR_TP_VALIDATION string = "validation"
 const ERR_TP_DATA string = "data"
 const ERR_TP_INFRA string = "infrastructure"
+const ERR_TP_NOT_FOUND string = "not_found"
 
 func NewValidationError(msg string, field *string, val interface{}) Error {
-	tp := ERR_TP_VALIDATION
-	return Error{
-		Message: &msg,
-		Type:    &tp,
-		Field:   field,
-		Value:   val,
-	}
+	return newError(&msg, ERR_TP_VALIDATION, val, field)
 }
 
 func NewDataError(msg string, val interface{}) Error {
-	tp := ERR_TP_DATA
-	return Error{
-		Message: &msg,
-		Type:    &tp,
-		Value:   val,
-	}
+	return newError(&msg, ERR_TP_DATA, val, nil)
 }
 
 func NewInfraError(msg string, val interface{}) Error {
-	tp := ERR_TP_INFRA
+	return newError(&msg, ERR_TP_INFRA, val, nil)
+}
+
+func NewNotFoundError(msg string, val interface{}) Error {
+	return newError(&msg, ERR_TP_NOT_FOUND, val, nil)
+}
+
+func newError(msg *string, tp string, val interface{}, fil *string) Error {
 	return Error{
-		Message: &msg,
+		Message: msg,
 		Type:    &tp,
 		Value:   val,
+		Field:   fil,
 	}
 }
 

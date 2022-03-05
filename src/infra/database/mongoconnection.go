@@ -2,12 +2,12 @@ package database
 
 import (
 	"context"
-	"encoding/json"
 	"entity/src/apperrors"
 	"entity/src/infra/logger"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,9 +36,7 @@ func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err
 		if res, dberr := mc.db.Collection(table).InsertOne(getContext(mc.params.upsertGetTimeOut), data); dberr == nil {
 			id = res.InsertedID
 		} else {
-			logger.Error("mongodb insert one error", dberr)
-			aperr := apperrors.NewDataError(dberr.Error(), data)
-			err = &aperr
+			err = getDataError([2]string{"mongodb insert one error", dberr.Error()}, &dberr, data)
 		}
 	} else {
 		err = getConnError(cerr)
@@ -47,31 +45,29 @@ func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err
 	return id, err
 }
 
-// TODO handle not found
-func (mc *mongoConn) Get(id interface{}, table string) (data []byte, err *apperrors.Error) {
+// Get a document from database and inject its content into result param, that SHOULD be an address reference (&result)
+func (mc *mongoConn) Get(id interface{}, table string, result interface{}) (err *apperrors.Error) {
 	if cerr := initConn(); cerr == nil {
 		ctx := getContext(mc.params.upsertGetTimeOut)
+		bid, _ := primitive.ObjectIDFromHex(id.(string))
+		errmsg := [2]string{"mongodb findOne error", "error on get data"}
 
-		bys, _ := json.Marshal(id)
-		bid, _ := primitive.ObjectIDFromHex(string(bys))
-
-		// TODO NOT FOUND WITH CORRECT ID: realise how to convert interface id into FCK bson object id
-		logger.Info("bys", string(bys))
-		logger.Info("bid", bid)
-
-		if raw, ferr := mc.db.Collection(table).FindOne(ctx, bson.M{"_id": string(bys)}).DecodeBytes(); ferr == nil {
-			data, _ = json.Marshal(raw)
-			logger.Info("bys", data)
+		if raw, ferr := mc.db.Collection(table).FindOne(ctx, bson.M{"_id": bid}).DecodeBytes(); ferr == nil {
+			if rerr := setResult(raw, result); rerr != nil {
+				err = getDataError(errmsg, &rerr, nil)
+			}
 		} else {
-			logger.Error("ferr", ferr)
-			aperr := apperrors.NewDataError("error on get data", ferr)
-			err = &aperr
+			if isNotFoundError(ferr) {
+				err = getNotFoundError(id)
+			} else {
+				err = getDataError(errmsg, &ferr, nil)
+			}
 		}
 	} else {
 		err = getConnError(cerr)
 	}
 
-	return data, err
+	return err
 }
 
 func NewDatabaseConnection() DataBaseHandler {
@@ -84,7 +80,34 @@ func NewDatabaseConnection() DataBaseHandler {
 func getConnError(err error) *apperrors.Error {
 	logger.Error("mongodb connection error", err)
 	res := apperrors.NewInfraError("error trying to connect on database", nil)
+
 	return &res
+}
+
+func getDataError(msgs [2]string, err *error, data interface{}) *apperrors.Error {
+	logger.Error(msgs[0], *err)
+	arr := apperrors.NewDataError(msgs[1], data)
+
+	return &arr
+}
+
+func getNotFoundError(id interface{}) *apperrors.Error {
+	arr := apperrors.NewNotFoundError("data with informed id not found", id)
+
+	return &arr
+}
+
+func isNotFoundError(err error) bool {
+	return strings.Contains(err.Error(), "no documents in result")
+}
+
+func setResult(raw bson.Raw, result interface{}) (err error) {
+	var bys []byte
+	if bys, err = bson.Marshal(raw); err == nil {
+		err = bson.Unmarshal(bys, result)
+	}
+
+	return err
 }
 
 /*

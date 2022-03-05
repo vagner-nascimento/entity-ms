@@ -27,13 +27,12 @@ func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
 	return err
 }
 
-func (er *entRepository) Get(id interface{}) (res *model.Entity, err *apperrors.Error) {
-	var data []byte
-	if data, err = er.db.Get(id, "entity"); err == nil {
-		parseEntity(res, data)
-	}
+func (er *entRepository) Get(id interface{}) (*model.Entity, *apperrors.Error) {
+	var ent model.Entity
+	err := er.db.Get(id, "entity", &ent)
+	ent.Id = id
 
-	return res, err
+	return &ent, err
 }
 
 func NewEntityRepository() EntityDataAdapter {

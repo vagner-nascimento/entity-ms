@@ -12,5 +12,5 @@ func responseHeaders(next netHttp.Handler) netHttp.Handler {
 func getMiddlewareList() (middleware []func(netHttp.Handler) netHttp.Handler) {
 	middleware = append(middleware, responseHeaders)
 
-	return middleware
+	return
 }

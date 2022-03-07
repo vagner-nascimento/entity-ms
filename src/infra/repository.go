@@ -25,7 +25,7 @@ func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
 		ent.Id = id
 	}
 
-	return err
+	return
 }
 
 func (er *entRepository) Get(id interface{}) (*model.Entity, *apperrors.Error) {
@@ -45,7 +45,18 @@ func (er *entRepository) Update(id interface{}, newEnt model.Entity) (res *model
 		res.Id = id
 	}
 
-	return res, err
+	return
+}
+
+func (er *entRepository) Delete(id interface{}) (res *model.Entity, err *apperrors.Error) {
+	dldt := time.Now()
+	del := model.Entity{DeletedAt: &dldt}
+
+	if err = er.db.Update(id, del, "entity", &res, er.activFil); err == nil {
+		res.Id = id
+	}
+
+	return
 }
 
 func NewEntityRepository() EntityDataAdapter {

@@ -13,7 +13,6 @@ import (
 
 // TODO list
 /*
- * - DELETE
  * - PATCH
  */
 func getEntityRoutes() *chi.Mux {
@@ -22,6 +21,7 @@ func getEntityRoutes() *chi.Mux {
 	router.Post("/", postEntity)
 	router.Get("/{id}", getEntity)
 	router.Put("/{id}", putEntity)
+	router.Delete("/{id}", deleteEntity)
 
 	return router
 }
@@ -60,7 +60,11 @@ func putEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 
 func deleteEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 	if id := getIdFromPath(r.URL.Path, w); id != "" {
-
+		if ent, err := app.NewEnityAdapter().Delete(id); err == nil {
+			writeSuccessResponse(w, ent)
+		} else {
+			writeErrorResponse(w, *err)
+		}
 	}
 }
 
@@ -85,7 +89,7 @@ func getValidatedEntity(reader io.ReadCloser, w netHttp.ResponseWriter) (res *mo
 		writeBadRequestResponse(w, resErr)
 	}
 
-	return res
+	return
 }
 
 func getEntityFromBody(reader io.ReadCloser) (ent model.Entity, err error) {
@@ -98,7 +102,7 @@ func getEntityFromBody(reader io.ReadCloser) (ent model.Entity, err error) {
 		ent, err = model.NewEntityFromBytes(bys)
 	}
 
-	return ent, err
+	return
 }
 
 // Get id from path. If id was not found, writes a bad request response
@@ -108,5 +112,5 @@ func getIdFromPath(path string, w netHttp.ResponseWriter) (id string) {
 		writeErrorResponse(w, apperrors.NewValidationError("id must be informed", &fild, nil))
 	}
 
-	return id
+	return
 }

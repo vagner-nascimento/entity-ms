@@ -83,5 +83,5 @@ func NewValidationErrors(vErs validator.ValidationErrors) (errs []Error) {
 		})
 	}
 
-	return errs
+	return
 }

@@ -14,5 +14,5 @@ func (h *httpErrors) Error() (msg string) {
 		msg += fmt.Sprintf("|%s", err.Error())
 	}
 
-	return msg
+	return
 }

@@ -23,6 +23,10 @@ func (e *entEntity) update(id interface{}, newEnt model.Entity) (*model.Entity, 
 	return e.repo.Update(id, newEnt)
 }
 
+func (e *entEntity) delete(id interface{}) (*model.Entity, *apperrors.Error) {
+	return e.repo.Delete(id)
+}
+
 func newEntEntity() entEntity {
 	return entEntity{
 		repo: infra.NewEntityRepository(),

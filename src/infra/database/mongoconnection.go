@@ -40,7 +40,7 @@ func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err
 		}
 	}
 
-	return id, err
+	return
 }
 
 // Get a document from database and inject its content into result param, that SHOULD be an address reference (&result)
@@ -57,7 +57,7 @@ func (mc *mongoConn) Get(id interface{}, table string, result interface{}, filte
 		}
 	}
 
-	return err
+	return
 }
 
 // Updates a document into database and inject its new content into result param, that SHOULD be an address reference (&result)
@@ -78,7 +78,7 @@ func (mc *mongoConn) Update(id interface{}, data interface{}, table string, resu
 		}
 	}
 
-	return err
+	return
 }
 
 func NewDatabaseConnection() DataBaseHandler {
@@ -95,7 +95,7 @@ func getFilters(fils ...map[string]interface{}) (res primitive.D) {
 		}
 	}
 
-	return res
+	return
 }
 
 func getFiltersWithId(id interface{}, fils ...map[string]interface{}) primitive.D {
@@ -143,7 +143,7 @@ func setResult(raw bson.Raw, result interface{}, msgs [2]string) (err *apperrors
 		err = getDataError(msgs, perr, nil)
 	}
 
-	return err
+	return
 }
 
 /*
@@ -206,7 +206,7 @@ func connect() (aperr *apperrors.Error) {
 		}
 	}
 
-	return aperr
+	return
 }
 
 func isConnected() bool {

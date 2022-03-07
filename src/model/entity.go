@@ -11,16 +11,16 @@ import (
 
 // TODO custom validation to avoid inform a future date
 type BirthDate struct {
-	Day   int16 `json:"day" validate:"required,min=1,max=31" bson:"day"`
-	Month int16 `json:"month" validate:"required,min=1,max=12" bson:"month"`
-	Year  int32 `json:"year" validate:"required,min=1900" bson:"year"`
+	Day   int16 `json:"day" validate:"required,min=1,max=31" bson:"day,omitempty"`
+	Month int16 `json:"month" validate:"required,min=1,max=12" bson:"month,omitempty"`
+	Year  int32 `json:"year" validate:"required,min=1900" bson:"year,omitempty"`
 }
 
 type Entity struct {
 	Id        interface{} `json:"id" bson:"-"`
-	Name      string      `json:"name" validate:"required,min=4,max=100" bson:"name"`
-	BirthDate BirthDate   `json:"birthDate" validate:"required" bson:"birthDate"`
-	Weight    *float32    `json:"weight" validate:"min=1.5,max=599.99" bson:"weight"`
+	Name      string      `json:"name" validate:"required,min=4,max=100" bson:"name,omitempty"`
+	BirthDate *BirthDate  `json:"birthDate" validate:"required" bson:"birthDate,omitempty"`
+	Weight    *float32    `json:"weight" validate:"min=1.5,max=599.99" bson:"weight,omitempty"`
 	CreatedAt *time.Time  `json:"createdAt" bson:"createdAt,omitempty"`
 	UpdatedAt *time.Time  `json:"updatedAt" bson:"updatedAt,omitempty"`
 	DeletedAt *time.Time  `json:"deletedAt" bson:"deletedAt,omitempty"`
@@ -33,7 +33,9 @@ func (e *Entity) Validate() (valid bool, errs []apperrors.Error) {
 		errs = apperrors.NewValidationErrors(err.(validator.ValidationErrors))
 	}
 
-	return len(errs) == 0, errs
+	valid = len(errs) == 0
+
+	return
 }
 
 func (e *Entity) String() (str string) {
@@ -43,11 +45,11 @@ func (e *Entity) String() (str string) {
 		logger.Error("Entity.String error", err)
 	}
 
-	return str
+	return
 }
 
 func NewEntityFromBytes(bys []byte) (ent Entity, err error) {
 	err = json.Unmarshal(bys, &ent)
 
-	return ent, err
+	return
 }

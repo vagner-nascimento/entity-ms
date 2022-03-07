@@ -9,13 +9,16 @@ import (
 	"github.com/go-playground/validator"
 )
 
-// TODO custom validation to avoid inform a future date
+/*
+ * Entity Definitions. If add new fields, remember to handle it into the functions.
+ */
 type BirthDate struct {
 	Day   int16 `json:"day" validate:"required,min=1,max=31" bson:"day,omitempty"`
 	Month int16 `json:"month" validate:"required,min=1,max=12" bson:"month,omitempty"`
 	Year  int32 `json:"year" validate:"required,min=1900" bson:"year,omitempty"`
 }
 
+// TODO custom validation to avoid inform a future date
 type Entity struct {
 	Id        interface{} `json:"id" bson:"-"`
 	Name      string      `json:"name" validate:"required,min=4,max=100" bson:"name,omitempty"`
@@ -51,6 +54,49 @@ func (e *Entity) ValidateName() (valid bool, errs []apperrors.Error) {
 	}
 
 	return valEnt.Validate()
+}
+
+func (e *Entity) ValidateWeigth() (valid bool, errs []apperrors.Error) {
+	valEnt := Entity{
+		Name:   "AAAAAAAAA",
+		Weight: e.Weight,
+		BirthDate: &BirthDate{
+			Day:   int16(time.Now().Day()) - 1,
+			Month: int16(time.Now().Month()),
+			Year:  int32(time.Now().Year()),
+		},
+	}
+
+	return valEnt.Validate()
+}
+
+func (e *Entity) ValidateBirthDate() (valid bool, errs []apperrors.Error) {
+	var w float32 = 500.1
+	valEnt := Entity{
+		Name:      "AAAAAAAAA",
+		Weight:    &w,
+		BirthDate: e.BirthDate,
+	}
+
+	return valEnt.Validate()
+}
+
+func (e *Entity) NilAllButBithDate() {
+	e.Id = nil
+	e.Weight = nil
+	e.Name = ""
+	e.CreatedAt = nil
+	e.UpdatedAt = nil
+	e.DeletedAt = nil
+}
+
+func (e *Entity) NilAllButWeight() {
+	e.Id = nil
+	e.BirthDate = nil
+	e.Name = ""
+	e.CreatedAt = nil
+	e.UpdatedAt = nil
+	e.DeletedAt = nil
 }
 
 func (e *Entity) NilAllButName() {

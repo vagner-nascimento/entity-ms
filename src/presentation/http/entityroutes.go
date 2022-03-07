@@ -13,7 +13,7 @@ import (
 
 // TODO list
 /*
- * - PATCH
+ * - Return a bad request response when coming unallowed fields
  */
 func getEntityRoutes() *chi.Mux {
 	router := chi.NewRouter()
@@ -23,6 +23,8 @@ func getEntityRoutes() *chi.Mux {
 	router.Put("/{id}", putEntity)
 	router.Delete("/{id}", deleteEntity)
 	router.Patch("/{id}/name", patchEntityName)
+	router.Patch("/{id}/weight", patchEntityWeight)
+	router.Patch("/{id}/birthdate", patchEntityBirthDate)
 
 	return router
 }
@@ -64,6 +66,40 @@ func patchEntityName(w netHttp.ResponseWriter, r *netHttp.Request) {
 		if ent := getEntityData(r.Body, w); ent != nil {
 			if valid, verr := ent.ValidateName(); valid {
 				ent.NilAllButName()
+				if res, aerr := app.NewEnityAdapter().Update(id, *ent); aerr == nil {
+					writeSuccessResponse(w, res)
+				} else {
+					writeErrorResponse(w, *aerr)
+				}
+			} else {
+				writeBadRequestResponse(w, httpErrors{Errors: verr})
+			}
+		}
+	}
+}
+
+func patchEntityWeight(w netHttp.ResponseWriter, r *netHttp.Request) {
+	if id := getIdFromPath(r.URL.Path, 2, w); id != "" {
+		if ent := getEntityData(r.Body, w); ent != nil {
+			if valid, verr := ent.ValidateWeigth(); valid {
+				ent.NilAllButWeight()
+				if res, aerr := app.NewEnityAdapter().Update(id, *ent); aerr == nil {
+					writeSuccessResponse(w, res)
+				} else {
+					writeErrorResponse(w, *aerr)
+				}
+			} else {
+				writeBadRequestResponse(w, httpErrors{Errors: verr})
+			}
+		}
+	}
+}
+
+func patchEntityBirthDate(w netHttp.ResponseWriter, r *netHttp.Request) {
+	if id := getIdFromPath(r.URL.Path, 2, w); id != "" {
+		if ent := getEntityData(r.Body, w); ent != nil {
+			if valid, verr := ent.ValidateBirthDate(); valid {
+				ent.NilAllButBithDate()
 				if res, aerr := app.NewEnityAdapter().Update(id, *ent); aerr == nil {
 					writeSuccessResponse(w, res)
 				} else {

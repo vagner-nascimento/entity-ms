@@ -22,7 +22,7 @@ func (ea *entAdapter) Update(id interface{}, newEnt model.Entity) (*model.Entity
 	return ea.uc.update(id, newEnt)
 }
 
-func (ea entAdapter) Delete(id interface{}) (*model.Entity, *apperrors.Error) {
+func (ea *entAdapter) Delete(id interface{}) (*model.Entity, *apperrors.Error) {
 	return ea.uc.delete(id)
 }
 

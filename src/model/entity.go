@@ -38,6 +38,30 @@ func (e *Entity) Validate() (valid bool, errs []apperrors.Error) {
 	return
 }
 
+func (e *Entity) ValidateName() (valid bool, errs []apperrors.Error) {
+	var w float32 = 500.1
+	valEnt := Entity{
+		Name:   e.Name,
+		Weight: &w,
+		BirthDate: &BirthDate{
+			Day:   int16(time.Now().Day()) - 1,
+			Month: int16(time.Now().Month()),
+			Year:  int32(time.Now().Year()),
+		},
+	}
+
+	return valEnt.Validate()
+}
+
+func (e *Entity) NilAllButName() {
+	e.Id = nil
+	e.BirthDate = nil
+	e.Weight = nil
+	e.CreatedAt = nil
+	e.UpdatedAt = nil
+	e.DeletedAt = nil
+}
+
 func (e *Entity) String() (str string) {
 	if bys, err := json.Marshal(e); err == nil {
 		str = string(bys)

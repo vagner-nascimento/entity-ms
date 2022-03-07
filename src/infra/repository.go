@@ -40,6 +40,7 @@ func (er *entRepository) Update(id interface{}, newEnt model.Entity) (res *model
 	updt := time.Now()
 	newEnt.UpdatedAt = &updt
 	newEnt.DeletedAt = nil
+	newEnt.CreatedAt = nil
 
 	if err = er.db.Update(id, newEnt, "entity", &res, er.activFil); err == nil {
 		res.Id = id

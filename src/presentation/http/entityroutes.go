@@ -13,7 +13,6 @@ import (
 
 // TODO list
 /*
- * - PUT
  * - DELETE
  * - PATCH
  */
@@ -56,6 +55,12 @@ func putEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 				writeErrorResponse(w, *err)
 			}
 		}
+	}
+}
+
+func deleteEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
+	if id := getIdFromPath(r.URL.Path, w); id != "" {
+
 	}
 }
 

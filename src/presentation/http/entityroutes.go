@@ -11,8 +11,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// TODO list
 /*
- * TODO list
  * - PUT
  * - DELETE
  * - PATCH
@@ -22,40 +22,50 @@ func getEntityRoutes() *chi.Mux {
 
 	router.Post("/", postEntity)
 	router.Get("/{id}", getEntity)
+	router.Put("/{id}", putEntity)
 
 	return router
 }
 
 func postEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
-	if ent, err := getValidatedEntity(r.Body); len(err.Errors) == 0 {
+	if ent := getValidatedEntity(r.Body, w); ent != nil {
 		if err := app.NewEnityAdapter().Save(ent); err == nil {
 			writeCreatedResponse(w, ent)
 		} else {
 			writeErrorResponse(w, *err)
 		}
-	} else {
-		writeBadRequestResponse(w, err)
 	}
 }
 
 func getEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
-	if id := getPathParam(r.URL.Path, 1); id != "" {
+	if id := getIdFromPath(r.URL.Path, w); id != "" {
 		if ent, err := app.NewEnityAdapter().Get(id); err == nil {
-			logger.Info("ent", ent)
 			writeSuccessResponse(w, ent)
 		} else {
 			writeErrorResponse(w, *err)
 		}
-	} else {
-		fild := "path '/{id}'"
-		writeErrorResponse(w, apperrors.NewValidationError("id must be informed", &fild, nil))
 	}
 }
 
-func getValidatedEntity(reader io.ReadCloser) (*model.Entity, httpErrors) {
-	var res *model.Entity
-	var resErr httpErrors
+func putEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
+	if id := getIdFromPath(r.URL.Path, w); id != "" {
+		if ent := getValidatedEntity(r.Body, w); ent != nil {
+			if newEnt, err := app.NewEnityAdapter().Update(id, *ent); err == nil {
+				writeSuccessResponse(w, newEnt)
+			} else {
+				writeErrorResponse(w, *err)
+			}
+		}
+	}
+}
 
+/*
+ * Auxiliar functions
+ */
+// Get entity from a reader, that is the request body, and validates the received data.
+// If is valid, return an Entity struct filled with data. If invalid, write a bad request response with details.
+func getValidatedEntity(reader io.ReadCloser, w netHttp.ResponseWriter) (res *model.Entity) {
+	var resErr httpErrors
 	if ent, err := getEntityFromBody(reader); err == nil {
 		if isValid, errs := ent.Validate(); isValid {
 			res = &ent
@@ -66,7 +76,11 @@ func getValidatedEntity(reader io.ReadCloser) (*model.Entity, httpErrors) {
 		resErr.Errors = append(resErr.Errors, apperrors.NewValidationError(err.Error(), nil, nil))
 	}
 
-	return res, resErr
+	if len(resErr.Errors) > 0 {
+		writeBadRequestResponse(w, resErr)
+	}
+
+	return res
 }
 
 func getEntityFromBody(reader io.ReadCloser) (ent model.Entity, err error) {
@@ -80,4 +94,14 @@ func getEntityFromBody(reader io.ReadCloser) (ent model.Entity, err error) {
 	}
 
 	return ent, err
+}
+
+// Get id from path. If id was not found, writes a bad request response
+func getIdFromPath(path string, w netHttp.ResponseWriter) (id string) {
+	if id = getPathParam(path, 1); id == "" {
+		fild := "path '/{id}'"
+		writeErrorResponse(w, apperrors.NewValidationError("id must be informed", &fild, nil))
+	}
+
+	return id
 }

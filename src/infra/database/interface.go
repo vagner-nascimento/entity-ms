@@ -5,6 +5,7 @@ import (
 )
 
 type DataBaseHandler interface {
-	Insert(data interface{}, table string) (id interface{}, err *apperrors.Error)
-	Get(id interface{}, table string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error)
+	Insert(data interface{}, table string) (interface{}, *apperrors.Error)
+	Get(id interface{}, table string, result interface{}, filters ...map[string]interface{}) *apperrors.Error
+	Update(id interface{}, data interface{}, table string, result interface{}, filters ...map[string]interface{}) *apperrors.Error
 }

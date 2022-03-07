@@ -9,8 +9,9 @@ import (
 
 // data adaption and control flow layer
 type entRepository struct {
-	db database.DataBaseHandler
-	tb string
+	db       database.DataBaseHandler
+	tb       string
+	activFil map[string]interface{}
 }
 
 func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
@@ -29,17 +30,29 @@ func (er *entRepository) Save(ent *model.Entity) (err *apperrors.Error) {
 
 func (er *entRepository) Get(id interface{}) (*model.Entity, *apperrors.Error) {
 	var ent model.Entity
-	fils := map[string]interface{}{"deletedAt": nil}
-	err := er.db.Get(id, "entity", &ent, fils)
+	err := er.db.Get(id, "entity", &ent, er.activFil)
 	ent.Id = id
 
 	return &ent, err
 }
 
+func (er *entRepository) Update(id interface{}, newEnt model.Entity) (res *model.Entity, err *apperrors.Error) {
+	updt := time.Now()
+	newEnt.UpdatedAt = &updt
+	newEnt.DeletedAt = nil
+
+	if err = er.db.Update(id, newEnt, "entity", &res, er.activFil); err == nil {
+		res.Id = id
+	}
+
+	return res, err
+}
+
 func NewEntityRepository() EntityDataAdapter {
 	return &entRepository{
-		db: database.NewDatabaseConnection(),
-		tb: "entity",
+		db:       database.NewDatabaseConnection(),
+		tb:       "entity",
+		activFil: map[string]interface{}{"deletedAt": nil},
 	}
 }
 

@@ -21,9 +21,9 @@ type Entity struct {
 	Name      string      `json:"name" validate:"required,min=4,max=100" bson:"name"`
 	BirthDate BirthDate   `json:"birthDate" validate:"required" bson:"birthDate"`
 	Weight    *float32    `json:"weight" validate:"min=1.5,max=599.99" bson:"weight"`
-	CreatedAt *time.Time  `json:"createdAt" bson:"createdAt"`
-	UpdatedAt *time.Time  `json:"updatedAt" bson:"updatedAt"`
-	DeletedAt *time.Time  `json:"deletedAt" bson:"deletedAt"`
+	CreatedAt *time.Time  `json:"createdAt" bson:"createdAt,omitempty"`
+	UpdatedAt *time.Time  `json:"updatedAt" bson:"updatedAt,omitempty"`
+	DeletedAt *time.Time  `json:"deletedAt" bson:"deletedAt,omitempty"`
 }
 
 func (e *Entity) Validate() (valid bool, errs []apperrors.Error) {

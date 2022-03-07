@@ -32,14 +32,12 @@ type mongoConn struct {
 }
 
 func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err *apperrors.Error) {
-	if cerr := initConn(); cerr == nil {
+	if err = initConn(); err == nil {
 		if res, dberr := mc.db.Collection(table).InsertOne(getContext(mc.params.upsertGetTimeOut), data); dberr == nil {
 			id = res.InsertedID
 		} else {
-			err = getDataError([2]string{"mongodb insert one error", dberr.Error()}, &dberr, data)
+			err = getDataError([2]string{"mongodb insert one error", dberr.Error()}, dberr, data)
 		}
-	} else {
-		err = getConnError(cerr)
 	}
 
 	return id, err
@@ -47,26 +45,37 @@ func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err
 
 // Get a document from database and inject its content into result param, that SHOULD be an address reference (&result)
 func (mc *mongoConn) Get(id interface{}, table string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error) {
-	if cerr := initConn(); cerr == nil {
-		bid, _ := primitive.ObjectIDFromHex(id.(string))
-		filters = append(filters, map[string]interface{}{"_id": bid})
-		fils := getFilters(filters...)
+	if err = initConn(); err == nil {
+		fils := getFiltersWithId(id, filters...)
 		ctx := getContext(mc.params.upsertGetTimeOut)
 		errmsg := [2]string{"mongodb findOne error", "error on get data"}
 
 		if raw, ferr := mc.db.Collection(table).FindOne(ctx, fils).DecodeBytes(); ferr == nil {
-			if rerr := setResult(raw, result); rerr != nil {
-				err = getDataError(errmsg, &rerr, nil)
-			}
+			err = setResult(raw, result, errmsg)
 		} else {
-			if isNotFoundError(ferr) {
-				err = getNotFoundError(id)
-			} else {
-				err = getDataError(errmsg, &ferr, nil)
-			}
+			err = getError(ferr, id.(string), errmsg)
 		}
-	} else {
-		err = getConnError(cerr)
+	}
+
+	return err
+}
+
+// Updates a document into database and inject its new content into result param, that SHOULD be an address reference (&result)
+func (mc *mongoConn) Update(id interface{}, data interface{}, table string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error) {
+	if err = initConn(); err == nil {
+		fils := getFiltersWithId(id, filters...)
+		ctx := getContext(mc.params.upsertGetTimeOut)
+		errmsg := [2]string{"mongodb findOneAndUpdate error", "error on update data"}
+		updoc := bson.M{"$set": data}
+		afopt := options.After
+		upsopt := false
+		opt := options.FindOneAndUpdateOptions{ReturnDocument: &afopt, Upsert: &upsopt}
+
+		if raw, uerr := mc.db.Collection(table).FindOneAndUpdate(ctx, fils, updoc, &opt).DecodeBytes(); uerr == nil {
+			err = setResult(raw, result, errmsg)
+		} else {
+			err = getError(uerr, id.(string), errmsg)
+		}
 	}
 
 	return err
@@ -89,34 +98,49 @@ func getFilters(fils ...map[string]interface{}) (res primitive.D) {
 	return res
 }
 
-func getConnError(err error) *apperrors.Error {
-	logger.Error("mongodb connection error", err)
-	res := apperrors.NewInfraError("error trying to connect on database", nil)
+func getFiltersWithId(id interface{}, fils ...map[string]interface{}) primitive.D {
+	bid, _ := primitive.ObjectIDFromHex(id.(string))
+	fils = append(fils, map[string]interface{}{"_id": bid})
+
+	return getFilters(fils...)
+}
+
+func getError(err error, id string, msgs [2]string) *apperrors.Error {
+	if isNotFoundError(err) {
+		return getNotFoundError(id)
+	}
+
+	return getDataError(msgs, err, nil)
+}
+
+func getDataError(msgs [2]string, err error, data interface{}) *apperrors.Error {
+	logger.Error(msgs[0], err)
+	res := apperrors.NewDataError(msgs[1], data)
 
 	return &res
 }
 
-func getDataError(msgs [2]string, err *error, data interface{}) *apperrors.Error {
-	logger.Error(msgs[0], *err)
-	arr := apperrors.NewDataError(msgs[1], data)
-
-	return &arr
-}
-
 func getNotFoundError(id interface{}) *apperrors.Error {
-	arr := apperrors.NewNotFoundError("data with informed id not found", id)
+	res := apperrors.NewNotFoundError("data with informed id not found", id)
 
-	return &arr
+	return &res
+
 }
 
 func isNotFoundError(err error) bool {
 	return strings.Contains(err.Error(), "no documents in result")
 }
 
-func setResult(raw bson.Raw, result interface{}) (err error) {
+func setResult(raw bson.Raw, result interface{}, msgs [2]string) (err *apperrors.Error) {
 	var bys []byte
-	if bys, err = bson.Marshal(raw); err == nil {
-		err = bson.Unmarshal(bys, result)
+	var perr error
+
+	if bys, perr = bson.Marshal(raw); perr == nil {
+		perr = bson.Unmarshal(bys, result)
+	}
+
+	if perr != nil {
+		err = getDataError(msgs, perr, nil)
 	}
 
 	return err
@@ -127,7 +151,7 @@ func setResult(raw bson.Raw, result interface{}) (err error) {
  */
 var singCon mongoConn
 
-func initConn() error {
+func initConn() *apperrors.Error {
 	singCon.once.Do(func() {
 		db := os.Getenv("MONGO_DB")
 		if db == "" {
@@ -162,11 +186,11 @@ func initConn() error {
 	return connect()
 }
 
-func connect() (err error) {
+func connect() (aperr *apperrors.Error) {
 	if !isConnected() {
 		opts := options.Client().ApplyURI(singCon.params.conStr)
-
 		var cli *mongo.Client
+		var err error
 
 		if cli, err = mongo.Connect(getContext(singCon.params.conTimeOut), opts); err == nil {
 			if err = cli.Ping(getContext(2), nil); err == nil {
@@ -174,9 +198,15 @@ func connect() (err error) {
 				singCon.db = cli.Database(singCon.params.dbName)
 			}
 		}
+
+		if err != nil {
+			logger.Error("mongodb connection error", err)
+			res := apperrors.NewInfraError("error trying to connect on database", nil)
+			aperr = &res
+		}
 	}
 
-	return err
+	return aperr
 }
 
 func isConnected() bool {

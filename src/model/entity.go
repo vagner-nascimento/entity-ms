@@ -10,7 +10,8 @@ import (
 )
 
 /*
- * Entity Definitions. If add new fields, remember to handle it into the functions.
+ * Entity Definitions.
+ * If add new fields, change or delete a existing one, remember to handle it on the functions.
  */
 type BirthDate struct {
 	Day   int16 `json:"day" validate:"required,min=1,max=31" bson:"day,omitempty"`
@@ -22,11 +23,25 @@ type BirthDate struct {
 type Entity struct {
 	Id        interface{} `json:"id" bson:"-"`
 	Name      string      `json:"name" validate:"required,min=4,max=100" bson:"name,omitempty"`
-	BirthDate *BirthDate  `json:"birthDate" validate:"required" bson:"birthDate,omitempty"`
 	Weight    *float32    `json:"weight" validate:"min=1.5,max=599.99" bson:"weight,omitempty"`
+	BirthDate *BirthDate  `json:"birthDate" validate:"required" bson:"birthDate,omitempty"`
 	CreatedAt *time.Time  `json:"createdAt" bson:"createdAt,omitempty"`
 	UpdatedAt *time.Time  `json:"updatedAt" bson:"updatedAt,omitempty"`
 	DeletedAt *time.Time  `json:"deletedAt" bson:"deletedAt,omitempty"`
+}
+
+func GetEntityBsonFields() (fils []string) {
+	fils = append(fils, "name")
+	fils = append(fils, "weight")
+	fils = append(fils, "birthDate")
+	fils = append(fils, "birthDate.day")
+	fils = append(fils, "birthDate.month")
+	fils = append(fils, "birthDate.year")
+	fils = append(fils, "createdAt")
+	fils = append(fils, "updatedAt")
+	fils = append(fils, "deletedAt")
+
+	return
 }
 
 func (e *Entity) Validate() (valid bool, errs []apperrors.Error) {

@@ -1,6 +1,7 @@
 package apperrors
 
 import (
+	"entity/src/utils"
 	"fmt"
 	"reflect"
 	"strings"
@@ -73,7 +74,7 @@ func NewValidationErrors(vErs validator.ValidationErrors) (errs []Error) {
 
 		tp := ERR_TP_VALIDATION
 		indx := strings.Index(e.Namespace(), ".") + 1
-		fld := e.Namespace()[indx:]
+		fld := utils.LowerFirst(e.Namespace()[indx:])
 
 		errs = append(errs, Error{
 			Message: &msg,

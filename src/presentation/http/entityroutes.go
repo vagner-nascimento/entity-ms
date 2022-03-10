@@ -20,6 +20,7 @@ func getEntityRoutes() *chi.Mux {
 
 	router.Post("/", postEntity)
 	router.Get("/{id}", getEntity)
+	router.Get("/", getEntities)
 	router.Put("/{id}", putEntity)
 	router.Delete("/{id}", deleteEntity)
 	router.Patch("/{id}/name", patchEntityName)
@@ -46,6 +47,15 @@ func getEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 		} else {
 			writeErrorResponse(w, *err)
 		}
+	}
+}
+
+// TODO get by query: values can be single or and array of values
+func getEntities(w netHttp.ResponseWriter, r *netHttp.Request) {
+	if errs := validateEntityQuery(r.URL.Query()); errs == nil {
+		// TODO continue implementation
+	} else {
+		writeBadRequestResponse(w, httpErrors{Errors: errs})
 	}
 }
 

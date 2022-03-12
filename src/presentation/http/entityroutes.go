@@ -5,6 +5,7 @@ import (
 	"entity/src/apperrors"
 	"entity/src/infra/logger"
 	"entity/src/model"
+	"fmt"
 	"io"
 	netHttp "net/http"
 
@@ -50,10 +51,10 @@ func getEntity(w netHttp.ResponseWriter, r *netHttp.Request) {
 	}
 }
 
-// TODO get by query: values can be single or and array of values
 func getEntities(w netHttp.ResponseWriter, r *netHttp.Request) {
 	if errs := validateEntityQuery(r.URL.Query()); errs == nil {
-		// TODO continue implementation
+		res, err := app.NewEnityAdapter().Search(r.URL.Query())
+		fmt.Println(res, err) // TODO handle res and error
 	} else {
 		writeBadRequestResponse(w, httpErrors{Errors: errs})
 	}

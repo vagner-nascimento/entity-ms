@@ -27,6 +27,10 @@ func (e *entEntity) delete(id interface{}) (*model.Entity, *apperrors.Error) {
 	return e.repo.Delete(id)
 }
 
+func (e *entEntity) search(parms map[string][]string) ([]model.Entity, *apperrors.Error) {
+	return e.repo.Search(parms)
+}
+
 func newEntEntity() entEntity {
 	return entEntity{
 		repo: infra.NewEntityRepository(),

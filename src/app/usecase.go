@@ -34,6 +34,10 @@ func (eu *entUseCase) delete(id interface{}) (*model.Entity, *apperrors.Error) {
 	return eu.ent.delete(id)
 }
 
+func (eu *entUseCase) search(parms map[string][]string) ([]model.Entity, *apperrors.Error) {
+	return eu.ent.search(parms)
+}
+
 /*
  * Auxiliar functions
  */

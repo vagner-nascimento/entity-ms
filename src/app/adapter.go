@@ -26,6 +26,10 @@ func (ea *entAdapter) Delete(id interface{}) (*model.Entity, *apperrors.Error) {
 	return ea.uc.delete(id)
 }
 
+func (ea *entAdapter) Search(parms map[string][]string) ([]model.Entity, *apperrors.Error) {
+	return ea.uc.search(parms)
+}
+
 func NewEnityAdapter() EntityAdapter {
 	return &entAdapter{
 		uc: newEntityUseCase(),

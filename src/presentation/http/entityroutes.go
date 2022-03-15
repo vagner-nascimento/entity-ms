@@ -12,10 +12,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// TODO list
-/*
- * - Return a bad request response when coming unallowed fields
- */
+// TODO Return a bad request response when coming unallowed fields
 func getEntityRoutes() *chi.Mux {
 	router := chi.NewRouter()
 

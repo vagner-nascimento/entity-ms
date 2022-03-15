@@ -60,10 +60,11 @@ func (er *entRepository) Delete(id interface{}) (res *model.Entity, err *apperro
 	return
 }
 
-// TODO implement mongo db serach paginated
 func (er *entRepository) Search(parms map[string][]string) (res []model.Entity, err *apperrors.Error) {
 	e := apperrors.NewDataError("not implemented yet", nil)
 	err = &e
+	// TODO convert res to model.Entity and return the properly response
+	er.db.Search(parms, "entity")
 
 	return
 }

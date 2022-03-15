@@ -4,6 +4,8 @@ import (
 	"context"
 	"entity/src/apperrors"
 	"entity/src/infra/logger"
+	"entity/src/utils"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -31,9 +33,9 @@ type mongoConn struct {
 	}
 }
 
-func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err *apperrors.Error) {
+func (mc *mongoConn) Insert(data interface{}, target string) (id interface{}, err *apperrors.Error) {
 	if err = initConn(); err == nil {
-		if res, dberr := mc.db.Collection(table).InsertOne(getContext(mc.params.upsertGetTimeOut), data); dberr == nil {
+		if res, dberr := mc.db.Collection(target).InsertOne(getContext(mc.params.upsertGetTimeOut), data); dberr == nil {
 			id = res.InsertedID
 		} else {
 			err = getDataError([2]string{"mongodb insert one error", dberr.Error()}, dberr, data)
@@ -44,13 +46,13 @@ func (mc *mongoConn) Insert(data interface{}, table string) (id interface{}, err
 }
 
 // Get a document from database and inject its content into result param, that SHOULD be an address reference (&result)
-func (mc *mongoConn) Get(id interface{}, table string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error) {
+func (mc *mongoConn) Get(id interface{}, target string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error) {
 	if err = initConn(); err == nil {
 		fils := getFiltersWithId(id, filters...)
 		ctx := getContext(mc.params.upsertGetTimeOut)
 		errmsg := [2]string{"mongodb findOne error", "error on get data"}
 
-		if raw, ferr := mc.db.Collection(table).FindOne(ctx, fils).DecodeBytes(); ferr == nil {
+		if raw, ferr := mc.db.Collection(target).FindOne(ctx, fils).DecodeBytes(); ferr == nil {
 			err = setResult(raw, result, errmsg)
 		} else {
 			err = getError(ferr, id.(string), errmsg)
@@ -61,7 +63,7 @@ func (mc *mongoConn) Get(id interface{}, table string, result interface{}, filte
 }
 
 // Updates a document into database and inject its new content into result param, that SHOULD be an address reference (&result)
-func (mc *mongoConn) Update(id interface{}, data interface{}, table string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error) {
+func (mc *mongoConn) Update(id interface{}, data interface{}, target string, result interface{}, filters ...map[string]interface{}) (err *apperrors.Error) {
 	if err = initConn(); err == nil {
 		fils := getFiltersWithId(id, filters...)
 		ctx := getContext(mc.params.upsertGetTimeOut)
@@ -71,11 +73,50 @@ func (mc *mongoConn) Update(id interface{}, data interface{}, table string, resu
 		upsopt := false
 		opt := options.FindOneAndUpdateOptions{ReturnDocument: &afopt, Upsert: &upsopt}
 
-		if raw, uerr := mc.db.Collection(table).FindOneAndUpdate(ctx, fils, updoc, &opt).DecodeBytes(); uerr == nil {
+		if raw, uerr := mc.db.Collection(target).FindOneAndUpdate(ctx, fils, updoc, &opt).DecodeBytes(); uerr == nil {
 			err = setResult(raw, result, errmsg)
 		} else {
 			err = getError(uerr, id.(string), errmsg)
 		}
+	}
+
+	return
+}
+
+func (mc mongoConn) Search(parms map[string][]string, target string) (res interface{}, err *apperrors.Error) {
+	if err = initConn(); err == nil {
+		var fils primitive.D
+		page := 1
+		limit := 50
+
+		for k, v := range parms {
+			fild := strings.Split(k, "[")[0]
+			filt := utils.StringBetweenBrackets(k)
+
+			fmt.Println("fild=", fild, ", v=", v, ", filt=", filt)
+
+			if fild == "page" {
+				page, _ = strconv.Atoi(v[0])
+				continue
+			}
+
+			if fild == "limit" {
+				limit, _ = strconv.Atoi(v[0])
+				continue
+			}
+
+			// filters: "lt,gt,lte,gte,after,before"
+			switch filt {
+			case "":
+				fils = append(fils, bson.E{Key: fild, Value: bson.A{v}})
+			case "lt", "gt", "lte", "gte": // filter on mongo drive has prefix "$". FI: $gte
+				fils = append(fils, bson.E{Key: fild, Value: bson.D{{Key: "$" + filt, Value: v[0]}}})
+			case "after", "before": // TODO handle after and before
+			}
+		}
+
+		fmt.Println("fils=", fils, "page=", page, "limit=", limit)
+
 	}
 
 	return
@@ -88,6 +129,13 @@ func NewDatabaseConnection() DataBaseHandler {
 /*
  * Type Auxiliar Funcs
  */
+func getFiltersWithId(id interface{}, fils ...map[string]interface{}) primitive.D {
+	bid, _ := primitive.ObjectIDFromHex(id.(string))
+	fils = append(fils, map[string]interface{}{"_id": bid})
+
+	return getFilters(fils...)
+}
+
 func getFilters(fils ...map[string]interface{}) (res primitive.D) {
 	for _, fil := range fils {
 		for k, v := range fil {
@@ -96,13 +144,6 @@ func getFilters(fils ...map[string]interface{}) (res primitive.D) {
 	}
 
 	return
-}
-
-func getFiltersWithId(id interface{}, fils ...map[string]interface{}) primitive.D {
-	bid, _ := primitive.ObjectIDFromHex(id.(string))
-	fils = append(fils, map[string]interface{}{"_id": bid})
-
-	return getFilters(fils...)
 }
 
 func getError(err error, id string, msgs [2]string) *apperrors.Error {
